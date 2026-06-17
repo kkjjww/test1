@@ -3,196 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>殿堂级真实烟花引擎</title>
+    <title>华尔街见闻</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; cursor: crosshair; }
         canvas { display: block; }
     </style>
 </head>
 <body>
-<canvas id="fireworksCanvas"></canvas>
 
+
+
+<div class="kcon">
+		<div>华尔街见闻</div>
+		<div  x-data="{ nlist:[],fetchurls() { fetch('https://api-one.wallstcn.com/apiv1/content/articles/hot?period=all').then(response => response.json()).then(data => this.nlist = data.data.day_items); } }"   >
+
+			<template x-for="(item) in nlist"  x-init="fetchurls">
+		
+				<li class="item" :id="item.link">
+					<h3><a :href="item.uri" x-text="item.title" target="_blank"></a></h3>
+				
+					<div class="item-c" ><p><span  x-text="formatTimeStamp(item.display_time)"></span></p></div>
+				</li>
+			
+			</template>
+		
+		</div>
+	</div>
+ <script defer src="alpinejs.min.js" defer></script>
 <script>
-    const canvas = document.getElementById('fireworksCanvas');
-    const ctx = canvas.getContext('2d');
-    
-    // 响应式与高清屏适配
-    const resize = () => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    };
-    window.addEventListener('resize', resize);
-    resize();
-
-    // 工具函数：生成随机数
-    const getRandom = (min, max) => Math.random() * (max - min) + min;
-
-    // 1. 核心粒子类：支持物理摩擦、辉光、二次爆炸与颜色渐变
-    class Particle {
-        constructor(x, y, color, vx, vy, type) {
-            this.x = x;
-            this.y = y;
-            this.vx = vx;
-            this.vy = vy;
-            this.type = type;
-            this.alpha = 1;
-            this.decay = getRandom(0.01, 0.02);
-            this.gravity = 0.04;
-            this.friction = 0.96; // 空气阻力
-            this.color = color;
-            this.colorAngle = Math.random() * 360;
-            
-            // 二次爆炸属性
-            this.secondaryExplosion = type === 'sparkle' && Math.random() > 0.85;
-            this.hasExploded = false;
-        }
-
-        update() {
-            this.vx *= this.friction;
-            this.vy *= this.friction;
-            this.vy += this.gravity;
-            this.x += this.vx;
-            this.y += this.vy;
-            this.alpha -= this.decay;
-            
-            // HSL 颜色动态渐变（从亮色过渡到暗色）
-            this.colorAngle = (this.colorAngle + 1) % 360;
-
-            // 触发二次爆炸（噼啪闪烁效果）
-            if (this.secondaryExplosion && !this.hasExploded && this.alpha < 0.6) {
-                this.hasExploded = true;
-                for (let i = 0; i < 8; i++) {
-                    const angle = getRandom(0, Math.PI * 2);
-                    const speed = getRandom(1, 3);
-                    // 生成微小的火花
-                    miniParticles.push(new Particle(this.x, this.y, '#fff', 
-                        Math.cos(angle) * speed, Math.sin(angle) * speed, 'mini'));
-                }
-            }
-        }
-
-        draw() {
-            if (this.alpha <= 0) return;
-            ctx.save();
-            ctx.globalAlpha = this.alpha;
-            
-            // 辉光效果
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = `hsl(${this.colorAngle}, 100%, 60%)`;
-            
-            ctx.fillStyle = `hsl(${this.colorAngle}, 100%, 60%)`;
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.type === 'mini' ? 1 : 2.5, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-        }
-    }
-
-    let particles = [];
-    let miniParticles = [];
-    let fireworks = [];
-
-    // 2. 烟花上升类
-    class Firework {
-        constructor(targetX) {
-            this.x = targetX;
-            this.y = canvas.height;
-            this.targetY = getRandom(canvas.height * 0.1, canvas.height * 0.4);
-            this.vy = -(getRandom(8, 12));
-            this.colorAngle = getRandom(0, 360);
-            this.exploded = false;
-        }
-
-        update() {
-            if (!this.exploded) {
-                this.y += this.vy;
-                
-                // 绘制上升的尾迹
-                ctx.save();
-                ctx.globalAlpha = 0.8;
-                ctx.shadowBlur = 8;
-                ctx.shadowColor = `hsl(${this.colorAngle}, 100%, 70%)`;
-                ctx.fillStyle = `hsl(${this.colorAngle}, 100%, 70%)`;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-
-                if (this.y <= this.targetY) this.explode();
-            }
-        }
-
-        explode() {
-            this.exploded = true;
-            // 随机选择爆炸类型：0-柳叶, 1-牡丹, 2-闪烁星
-            const type = Math.floor(Math.random() * 3);
-            const count = 150;
-
-            for (let i = 0; i < count; i++) {
-                const angle = (i / count) * Math.PI * 2;
-                let speed, pType;
-
-                if (type === 0) { // 柳叶：初速大，受重力影响深，拖尾长
-                    speed = getRandom(2, 6);
-                    pType = 'willow';
-                } else if (type === 1) { // 牡丹：饱满的球形爆发
-                    speed = getRandom(3, 5);
-                    pType = 'peony';
-                } else { // 闪烁星：带有二次爆炸
-                    speed = getRandom(2, 5);
-                    pType = 'sparkle';
-                }
-
-                particles.push(new Particle(this.x, this.y, this.colorAngle, 
-                    Math.cos(angle) * speed, Math.sin(angle) * speed, pType));
-            }
-        }
-
-        isDone() {
-            return this.exploded;
-        }
-    }
-
-    // 3. 核心渲染循环
-    function loop() {
-        // 使用半透明黑色覆盖，产生真实的拖尾与消散效果
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // 更新上升的烟花
-        for (let i = fireworks.length - 1; i >= 0; i--) {
-            fireworks[i].update();
-            if (fireworks[i].isDone()) fireworks.splice(i, 1);
-        }
-
-        // 更新并绘制主粒子
-        for (let i = particles.length - 1; i >= 0; i--) {
-            particles[i].update();
-            particles[i].draw();
-            if (particles[i].alpha <= 0) particles.splice(i, 1);
-        }
-
-        // 更新并绘制二次爆炸的微小火花
-        for (let i = miniParticles.length - 1; i >= 0; i--) {
-            miniParticles[i].update();
-            miniParticles[i].draw();
-            if (miniParticles[i].alpha <= 0) miniParticles.splice(i, 1);
-        }
-
-        requestAnimationFrame(loop);
-    }
-
-    // 交互与自动发射
-    canvas.addEventListener('click', (e) => {
-        fireworks.push(new Firework(e.clientX));
-    });
-
-    setInterval(() => {
-        fireworks.push(new Firework(getRandom(canvas.width * 0.1, canvas.width * 0.9)));
-    }, 600);
-
-    loop();
-
+  
 /*
 git config --global user.name "kkjjww"
 git config --global user.email kjw118@qq.com
@@ -207,7 +46,7 @@ git add .
 提交更改
 git commit -m "main"
 
-
+git push origin "main"
 拉取最新更改
 git pull origin main
 # 或者如果在新的分支上工作

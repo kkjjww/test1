@@ -1,4 +1,4 @@
 # test1
 
 
-Ê¹ÓÃalpinejs.min.js
+ä½¿ç”¨alpinejs.min.js
